@@ -556,7 +556,7 @@ window.register = function() {
             userData.rozetler          = [];
             userData.haftalikBadge     = null;
             userData.girisGecmisi      = [];
-            userData.sonGirisTarihi    = getTurkiyeZamani().toISOString();
+            userData.sonGirisTarihi    = null;
             userData.haftalikBaslangic = haftalikSifirla(getTurkiyeZamani()).toISOString();
         }
         return db.collection('users').doc(res.user.uid).set(userData);
