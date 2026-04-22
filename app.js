@@ -468,23 +468,45 @@ window.yukseklikArtir = function() {
                 throw new Error("⏰ Bugün zaten sayfa girdin! Yarın tekrar deneyebilirsin.");
             }
             
+// --- 16. YÜKSEKLİK ARTIRMA (GÜNDE 1 KEZ - HAFTALIK BİRİKİMLİ) ---
+window.yukseklikArtir = function() {
+    const sayfa = parseInt(document.getElementById('sayfaSayisi').value, 10);
+    if (!sayfa || sayfa <= 0) return alert("Lütfen geçerli sayfa gir.");
+
+    const user = auth.currentUser;
+    if (!user) return alert("Lütfen giriş yapınız!");
+
+    const ref = db.collection('users').doc(user.uid);
+
+    db.runTransaction(transaction => {
+        return transaction.get(ref).then(doc => {
+            if (!doc.exists) {
+                throw new Error("Kullanıcı verisi bulunamadı.");
+            }
+
+            const userData = doc.data();
+
+            // Günde 1 kez kontrolü - Türkiye saati ile tutarlı hesap
+            const sonGirisTarihi = userData.sonGirisTarihi ? new Date(userData.sonGirisTarihi) : null;
+            const bugun = bugunuSifirla(getTurkiyeZamani());
+
+            if (sonGirisTarihi && bugunuSifirla(new Date(sonGirisTarihi)).getTime() === bugun.getTime()) {
+                // Transaction'ı iptal etmek için hata fırlatıyoruz
+                throw new Error("⏰ Bugün zaten sayfa girdin! Yarın tekrar deneyebilirsin.");
+            }
+
             // HAFTALIK BİRİKİMLİ SAYFA
             const mevcutHaftalikSayfa = userData.haftalikSayfa || 0;
             const yeniHaftalikSayfa = mevcutHaftalikSayfa + sayfa;
-            
-            // AYLIK SAYFA
+
+            // Diğer toplamlar
             const yeniAylikSayfa = (userData.aylikSayfa || 0) + sayfa;
-            
-            // 4-AYLIK SAYFA
             const yeni4AylikSayfa = (userData.dort_aylikSayfa || 0) + sayfa;
-            
-            // YILLIK SAYFA
             const yeniYillikSayfa = (userData.yillikSayfa || 0) + sayfa;
-            
-            // ⭐ BALON YÜKSEKLİĞİ = HAFTALıK BİRİKİMLİ SAYFA (1 sayfa = 1 metre)
-            const yeniYukseklik = yeniHaftalikSayfa;
-            
-            transaction.update(ref, { 
+
+            const yeniYukseklik = yeniHaftalikSayfa; // 1 sayfa = 1 metre
+
+            transaction.update(ref, {
                 haftalikSayfa: yeniHaftalikSayfa,
                 aylikSayfa: yeniAylikSayfa,
                 dort_aylikSayfa: yeni4AylikSayfa,
@@ -496,17 +518,20 @@ window.yukseklikArtir = function() {
             });
         });
     }).then(() => {
-        alert("✅ " + sayfa + " sayfa eklendi! Balonun yükselmesi başlasın! 🎈");
+        // Başarılıysa UI güncelle / rozetleri kontrol et
         document.getElementById('sayfaSayisi').value = '';
         kontorSeriRozet(user.uid);
-        
         db.collection('users').doc(user.uid).get().then(doc => {
             const userData = doc.data();
             kontorHaftaliSiralamaBadge(userData.okul, userData.sinif, userData.sube);
         });
-        
-        setTimeout(() => location.reload(), 1500);
-    }).catch(e => alert("Hata: " + e.message));
+        alert("✅ Sayfanız kaydedildi! Balonunuz yukarı çıktı 🎈");
+        // İsteğe bağlı, küçük gecikme sonra yeniden yükle
+        setTimeout(() => location.reload(), 1200);
+    }).catch(e => {
+        // Transaction sırasında fırlatılan hata veya diğer hatalar buraya düşer
+        alert(e.message || "Bir hata oluştu.");
+    });
 };
 
 // --- 17. KAYIT / GİRİŞ / ÇIKIŞ ---
