@@ -8,44 +8,50 @@
 </head>
 <body>
     <div class="container">
-        <div id="auth-area">
-            <!-- Giriş formu buraya gelir (index.html'den kopyala) -->
+
+        <!-- Giriş yapılmamışsa bu gösterilebilir (app.js yönlendirir) -->
+        <div id="auth-area" style="display:none;">
+            <p>Yönlendiriliyor...</p>
         </div>
 
+        <!-- Superadmin paneli -->
         <div id="superadmin-area" style="display:none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <h2>⚙️ Superadmin Paneli</h2>
-                <button onclick="logout()" style="background:#e74c3c; padding: 10px 20px; font-size: 14px;">🚪 Çıkış Yap</button>
+                <button onclick="logout()" style="background:#e74c3c; padding:10px 20px; font-size:14px;">🚪 Çıkış Yap</button>
             </div>
 
-            <div style="background: #ecf0f1; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <!-- OKUL EKLEME -->
+            <div style="background:#ecf0f1; padding:20px; border-radius:10px; margin-bottom:20px;">
                 <h3>🏫 Yeni Okul Tanımla</h3>
-                
+
                 <label style="font-size:13px; color:#666; display:block; margin-bottom:4px;">İl</label>
-                <select id="yeniOkulIl" onchange="yeniOkulIlceleriYukle()" style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius:8px; border:2px solid #ddd;">
+                <select id="yeniOkulIl" onchange="yeniOkulIlceleriYukle()" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:2px solid #ddd;">
                     <option value="">İl Seçiniz</option>
                 </select>
 
                 <label style="font-size:13px; color:#666; display:block; margin-bottom:4px;">İlçe</label>
-                <select id="yeniOkulIlce" style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius:8px; border:2px solid #ddd;">
+                <select id="yeniOkulIlce" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:2px solid #ddd;">
                     <option value="">Önce il seçiniz</option>
                 </select>
 
                 <label style="font-size:13px; color:#666; display:block; margin-bottom:4px;">Okul Adı</label>
-                <input type="text" id="yeniOkulAd" placeholder="Örn: Atatürk İlkokulu" style="width: 95%; padding: 10px; margin-bottom: 10px; border-radius:8px; border:2px solid #ddd;">
+                <input type="text" id="yeniOkulAd" placeholder="Örn: Atatürk İlkokulu" style="width:95%; padding:10px; margin-bottom:10px; border-radius:8px; border:2px solid #ddd;">
 
-                <button onclick="okulEkle()" style="width: 100%; background: #27ae60; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
+                <button onclick="okulEkle()" style="width:100%; background:#27ae60; color:white; padding:12px; border:none; border-radius:8px; cursor:pointer; font-size:16px;">
                     ✅ Okul Ekle
                 </button>
             </div>
 
-            <div style="background: #e8f5e9; padding: 20px; border-radius: 10px;">
-                <h3>📋 Eklenen Okullar</h3>
-                <div id="okullar-listesi" style="max-height: 300px; overflow-y: auto;">
+            <!-- MEVCUT OKULLAR -->
+            <div style="background:#e8f5e9; padding:20px; border-radius:10px;">
+                <h3>📋 Kayıtlı Okullar</h3>
+                <div id="okullar-listesi" style="max-height:300px; overflow-y:auto;">
                     <p style="color:#999">Yükleniyor...</p>
                 </div>
             </div>
         </div>
+
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -53,31 +59,5 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="data.js"></script>
     <script src="app.js"></script>
-    <script>
-        // Okulları listele
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                db.collection('sistem').doc('okulListesi').onSnapshot(doc => {
-                    const listesi = document.getElementById('okullar-listesi');
-                    if (doc.exists) {
-                        const okullar = doc.data();
-                        let html = '';
-                        for (const key in okullar) {
-                            const [il, ilce] = key.split('_');
-                            html += `<div style="background:white; padding:10px; margin:5px; border-radius:8px; border-left: 4px solid #27ae60;">
-                                <strong>${il} / ${ilce}</strong>
-                                <div style="margin-left:10px; color:#666; font-size:13px;">`;
-                            
-                            okullar[key].forEach(okul => {
-                                html += `<div>• ${okul}</div>`;
-                            });
-                            html += `</div></div>`;
-                        }
-                        listesi.innerHTML = html;
-                    }
-                });
-            }
-        });
-    </script>
 </body>
 </html>
