@@ -1,5 +1,5 @@
 // ============================================================
-//  UÇUR BALONUNU — MASTER APP ENGINE (V6.1 - WEEKLY ACCUMULATION)
+//  UÇUR BALONUNU — MASTER APP ENGINE (V4.0 - FULLY FIXED)
 // ============================================================
 
 const firebaseConfig = {
@@ -25,10 +25,9 @@ function gosterGizle(id, durum) {
     if (el) el.style.display = durum;
 }
 
-// 2.5. TÜRKİYE ZAMANI FONKSIYONU [HATA #1 - DÜZELTME]
+// 2.5. TÜRKİYE ZAMANI FONKSIYONU
 function getTurkiyeZamani() {
     const now = new Date();
-    // Türkiye saati UTC+3
     const turkiyeZamani = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }));
     return turkiyeZamani;
 }
@@ -77,7 +76,6 @@ auth.onAuthStateChanged(user => {
                 if (IS_ADMIN_PAGE || IS_SUPERADMIN_PAGE) {
                     window.location.href = 'index.html';
                 } else {
-                    // Günde 1 kez kontrolü
                     kontorGirisSaatiBilgisi(user.uid);
                     ogrenciPaneliYukle(user.uid, userData);
                 }
@@ -117,11 +115,10 @@ function kontorGirisSaatiBilgisi(uid) {
         
         // Haftalık balon SİFIRLA (yeni hafta başladıysa)
         if (!sonHaftaBasi || haftalikSifirla(new Date(sonHaftaBasi)).getTime() !== buHaftaBasi.getTime()) {
-            // Haftalık rozeti SİL (yeni hafta, eski rozet geçerli değil)
             updates.haftalikBaslangic = buHaftaBasi;
-            updates.balonYuksekligi = 0; // Pazardan sonra SİFIRLA
-            updates.haftalikSayfa = 0; // Haftalık sayfa da sıfırla
-            updates.haftalikBadge = null; // Haftalık rozeti KALDIR
+            updates.balonYuksekligi = 0;
+            updates.haftalikSayfa = 0;
+            updates.haftalikBadge = null;
         }
         
         // Aylık ve yıllık tutmaya devam et
@@ -130,8 +127,6 @@ function kontorGirisSaatiBilgisi(uid) {
         if (!userData.yillikSayfa) updates.yillikSayfa = 0;
         
         userRef.update(updates);
-        
-        // Seri rozet kontrol
         kontorSeriRozet(uid);
     });
 }
@@ -144,7 +139,6 @@ function kontorSeriRozet(uid) {
         const userData = doc.data();
         const girisGecmisi = userData.girisGecmisi || [];
         
-        // Son kaç gün peş peşe giriş yapılmış?
         let seriGun = 0;
         const bugun = new Date();
         
@@ -186,7 +180,6 @@ function kontorHaftaliSiralamaBadge(okul, sinif, sube) {
         .where('rol', '==', 'ogrenci')
         .get()
         .then(snapshot => {
-            // Öğrencileri haftalık sayfa sayısına göre sırala
             const ogrenciler = [];
             snapshot.forEach(doc => {
                 ogrenciler.push({
@@ -197,14 +190,12 @@ function kontorHaftaliSiralamaBadge(okul, sinif, sube) {
             
             ogrenciler.sort((a, b) => b.haftalikSayfa - a.haftalikSayfa);
             
-            // Önce TÜM öğrencilerin haftalık rozetini temizle
             snapshot.forEach(doc => {
                 db.collection('users').doc(doc.id).update({ 
                     haftalikBadge: null
                 });
             });
             
-            // Sonra sadece ilk 3'e rozet ver
             const rozetAta = {
                 0: 'haftalik_1',
                 1: 'haftalik_2',
@@ -226,7 +217,6 @@ function superadminPaneliYukle(userData) {
     console.log("Superadmin paneli yükleniyor...");
     gosterGizle('auth-area', 'none');
     gosterGizle('superadmin-area', 'block');
-    
     window.illeriDoldur();
 }
 
@@ -242,8 +232,6 @@ function ogrenciPaneliYukle(uid, data) {
     if (heightDisp) heightDisp.innerText = data.balonYuksekligi || 0;
 
     balonlariGoster(data.okul, data.sinif, data.sube);
-    
-    // Rozetleri göster
     rozetleriGoster(uid);
 }
 
@@ -254,7 +242,6 @@ function rozetleriGoster(uid) {
     
     db.collection('users').doc(uid).onSnapshot(doc => {
         const rozetler = doc.data().rozetler || [];
-        // HATA #2 DÜZELTME: Rozetlerin key'leri düzeltildi
         const rozetEmlari = {
             '10gun': '🔟',
             '20gun': '2️⃣0️⃣',
@@ -397,11 +384,10 @@ function ogrenciListele(okul, sinif, sube) {
             snapshot.forEach(doc => {
                 const s = doc.data();
                 const rozetler = s.rozetler || [];
-                const haftalikBadge = s.haftalikBadge; // SADECE bu haftanın rozeti
+                const haftalikBadge = s.haftalikBadge;
                 
                 let rozetHtml = '';
                 
-                // Mevcut haftalık rozeti göster (SADECE bu hafta)
                 if (haftalikBadge) {
                     const rozetMap = {
                         'haftalik_1': '🥇',
@@ -411,7 +397,6 @@ function ogrenciListele(okul, sinif, sube) {
                     if (rozetMap[haftalikBadge]) rozetHtml += rozetMap[haftalikBadge];
                 }
                 
-                // Diğer rozetleri göster (seri, aferin vb)
                 rozetler.forEach(r => {
                     const rozetMap = {
                         '10gun': '🔟',
@@ -422,7 +407,6 @@ function ogrenciListele(okul, sinif, sube) {
                     if (rozetMap[r]) rozetHtml += rozetMap[r];
                 });
                 
-                // HATA #3 DÜZELTME: XSS güvenlik riski düzeltildi
                 const rozetButonId = `rozet-button-${doc.id}`;
                 listArea.innerHTML += `
                     <div style="background:white; padding:10px; margin:5px; border-radius:10px; display:flex; justify-content:space-between; align-items:center;">
@@ -436,7 +420,6 @@ function ogrenciListele(okul, sinif, sube) {
                         </button>
                     </div>`;
                 
-                // Event listener'ı ayıkla
                 setTimeout(() => {
                     const btn = document.getElementById(rozetButonId);
                     if (btn) {
@@ -463,40 +446,42 @@ window.rozetVer = function(ogrenciId) {
     });
 };
 
-// --- 16. YÜKSEKLİK ARTIRMA (GÜNDE 1 KEZ - BİRİKİMLİ) ---
+// --- 16. YÜKSEKLİK ARTIRMA (GÜNDE 1 KEZ - HAFTALıK BİRİKİMLİ) ---
 window.yukseklikArtir = function() {
     const sayfa = parseInt(document.getElementById('sayfaSayisi').value);
     if (!sayfa || sayfa <= 0) return alert("Lütfen geçerli sayfa gir.");
     
     const user = auth.currentUser;
+    if (!user) return alert("Lütfen giriş yapınız!");
+    
     const ref = db.collection('users').doc(user.uid);
     
     db.runTransaction(transaction => {
         return transaction.get(ref).then(doc => {
             const userData = doc.data();
             
-            // Günde 1 kez kontrolü
+            // Günde 1 kez kontrolü - DÜZELTME: getTurkiyeZamani() kullanıldı
             const sonGirisTarihi = userData.sonGirisTarihi ? new Date(userData.sonGirisTarihi) : null;
-            const bugun = bugunuSifirla(new Date());
+            const bugun = bugunuSifirla(getTurkiyeZamani());
             
-            if (sonGirisTarihi && bugunuSifirla(sonGirisTarihi).getTime() === bugun.getTime()) {
-                return alert("⏰ Bugün zaten sayfa girdin! Yarın tekrar deneyebilirsin.");
+            if (sonGirisTarihi && bugunuSifirla(new Date(sonGirisTarihi)).getTime() === bugun.getTime()) {
+                throw new Error("⏰ Bugün zaten sayfa girdin! Yarın tekrar deneyebilirsin.");
             }
             
-            // HAFTALIK BİRİKİMLİ (bir önceki gün üzerine ekle)
+            // HAFTALIK BİRİKİMLİ SAYFA
             const mevcutHaftalikSayfa = userData.haftalikSayfa || 0;
             const yeniHaftalikSayfa = mevcutHaftalikSayfa + sayfa;
             
-            // AYLIK (tüm ayı tutmaya devam et)
+            // AYLIK SAYFA
             const yeniAylikSayfa = (userData.aylikSayfa || 0) + sayfa;
             
-            // 4-AYLIK
+            // 4-AYLIK SAYFA
             const yeni4AylikSayfa = (userData.dort_aylikSayfa || 0) + sayfa;
             
-            // YILLIK
+            // YILLIK SAYFA
             const yeniYillikSayfa = (userData.yillikSayfa || 0) + sayfa;
             
-            // BALON YÜKSEKLİĞİ = haftalık birikimli sayfa (1 sayfa = 1 metre)
+            // ⭐ BALON YÜKSEKLİĞİ = HAFTALıK BİRİKİMLİ SAYFA (1 sayfa = 1 metre)
             const yeniYukseklik = yeniHaftalikSayfa;
             
             transaction.update(ref, { 
@@ -504,20 +489,23 @@ window.yukseklikArtir = function() {
                 aylikSayfa: yeniAylikSayfa,
                 dort_aylikSayfa: yeni4AylikSayfa,
                 yillikSayfa: yeniYillikSayfa,
-                balonYuksekligi: yeniYukseklik,  // BİRİKİMLİ
+                balonYuksekligi: yeniYukseklik,
                 toplamOkunanSayfa: (userData.toplamOkunanSayfa || 0) + sayfa,
                 sonGirisTarihi: bugun,
                 girisGecmisi: firebase.firestore.FieldValue.arrayUnion(bugun.toISOString())
             });
         });
     }).then(() => {
+        alert("✅ " + sayfa + " sayfa eklendi! Balonun yükselmesi başlasın! 🎈");
         document.getElementById('sayfaSayisi').value = '';
         kontorSeriRozet(user.uid);
-        // Öğretmenin sınıfını al ve haftalık sıralamayı güncelle
+        
         db.collection('users').doc(user.uid).get().then(doc => {
             const userData = doc.data();
             kontorHaftaliSiralamaBadge(userData.okul, userData.sinif, userData.sube);
         });
+        
+        setTimeout(() => location.reload(), 1500);
     }).catch(e => alert("Hata: " + e.message));
 };
 
@@ -540,7 +528,6 @@ window.register = function() {
             rol: finalRol
         };
         
-        // ÖĞRETMEN değilse balon verisi ekle
         if (finalRol === 'ogrenci') {
             userData.balonEtiketi = document.getElementById('takmaAd').value || "Anonim";
             userData.balonYuksekligi = 0;
@@ -549,7 +536,7 @@ window.register = function() {
             userData.dort_aylikSayfa = 0;
             userData.yillikSayfa = 0;
             userData.rozetler = [];
-            userData.haftalikBadge = null; // Haftalık rozeti başta boş
+            userData.haftalikBadge = null;
             userData.girisGecmisi = [];
             userData.sonGirisTarihi = getTurkiyeZamani();
             userData.haftalikBaslangic = haftalikSifirla(getTurkiyeZamani());
@@ -580,7 +567,6 @@ window.showRegisterForm = function(rol) {
         formTitle.innerText = (rol === 'admin' ? 'Öğretmen Kaydı' : 'Öğrenci Kaydı');
     }
     
-    // Öğretmen kaydında takma isim gizle
     const takmaAdInput = document.getElementById('takmaAd');
     if (takmaAdInput) {
         takmaAdInput.style.display = (rol === 'admin' ? 'none' : 'block');
@@ -595,7 +581,7 @@ window.resetRoleSelection = function() {
     gosterGizle('role-selection-area', 'block');
 };
 
-// --- 18.5. GİRİŞ FONKSİYONU [HATA #4 - DÜZELTME]
+// --- 18.5. GİRİŞ FONKSİYONU
 window.login = function() {
     const email = document.getElementById('loginEmail').value;
     const pass = document.getElementById('loginPassword').value;
@@ -608,7 +594,6 @@ window.login = function() {
             location.reload();
         })
         .catch(e => {
-            // Hata mesajlarını Türkçeleştir
             let errorMsg = "Giriş hatası!";
             if (e.code === 'auth/user-not-found') {
                 errorMsg = "Bu e-posta ile kayıtlı kullanıcı bulunamadı!";
@@ -621,7 +606,7 @@ window.login = function() {
         });
 };
 
-// --- 18.6. ÇIKIŞ FONKSİYONU [HATA #5 - DÜZELTME]
+// --- 18.6. ÇIKIŞ FONKSİYONU
 window.logout = function() {
     auth.signOut().then(() => {
         alert("Çıkış Yapıldı!");
